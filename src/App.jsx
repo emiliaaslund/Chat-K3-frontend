@@ -1,30 +1,17 @@
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import "./App.css";
-// import Chat from "../components/Chat";
 
 let socket;
 
 function App() {
-  const [newMessage, setNewMessage] = useState("");
+  const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-
-  const [user, setUser] = useState([]);
   const [username, setUsername] = useState([]);
-  // const [activeUsers, setActiveUsers] = useState([]);
-
   const [rooms, setRooms] = useState("");
   const [room, setRoom] = useState("");
   const [roomInput, setRoomInput] = useState("");
-
   const [showChat, setShowChat] = useState(false);
-
-  // console.log(room, "room"); //noll
-  // console.log(rooms, "rooms"); // alla sparade rummen
-  // console.log(roomInput, "roominput"); // noll
-  // console.log(username, "username");
-  // console.log(message, "message"); // noll
-  // console.log(messages, "messages"); // noll
 
   useEffect(() => {
     socket = io("http://localhost:4000");
@@ -35,27 +22,22 @@ function App() {
 
     //messages
     socket.on("sent_message", (data) => {
-      console.log(data);
+      setMessages(data);
+      console.log(data, "från sent message");
     });
-
-    // socket.on("active_user", (data) => {
-    //   console.log(data, "hej från active user");
-    // });
 
     //users
     socket.on("get_users", (data) => {
-      console.log(data);
       setUsername(data);
     });
 
     socket.on("user_created", (data) => {
-      setUser(data);
-      console.log(`Inloggad som ${data}`);
+      setUsername(data.username);
+      console.log(`Username: ${data.username} has been created`);
     });
 
     //rooms
     socket.on("rooms", (data) => {
-      // console.log(data, "hämtar alla rum");
       setRooms(data);
     });
 
@@ -68,14 +50,17 @@ function App() {
       }
     });
 
-    socket.on("joined_room", (data) => {
-      console.log(data);
-      setRoom(data);
+    socket.on("room_created", (room) => {
+      console.log(`A new room: ${room} was created`);
+      setRoom(room);
     });
 
     socket.on("leave_room", (room) => {
       socket.leave(room);
-      console.log(socket.room);
+    });
+
+    socket.on("deleted_room", (room) => {
+      setRooms(room);
     });
 
     socket.on("disconnect", (reason) => {
@@ -90,47 +75,52 @@ function App() {
   function handleUsername(username) {
     if (username) {
       socket.emit("create_user", username);
-      setUsername(username);
+      setUsername("");
     }
   }
 
   // RUM
-  function createRoom(roomName) {
-    if (roomInput) socket.emit("create_room", roomName);
+  function createRoom(room) {
+    if (roomInput) socket.emit("create_room", room);
     setRoomInput("");
   }
 
-  function joinRoom(roomName) {
-    if (roomName) {
-      socket.emit("join_room", roomName);
-      setUsername(username);
-      setRoom(roomName);
+  function joinRoom(room) {
+    if (room) {
+      socket.emit("join_room", room);
+      setRoom(room);
       setShowChat(true);
     }
   }
 
   //CHAT
-  function leaveRoom(roomName) {
-    socket.emit("leave_room", roomName);
+  function leaveRoom() {
+    console.log(`${username} has left room: ${room}`);
+    socket.emit("leave_room", room);
     setShowChat(false);
+    setUsername("");
+    setRoomInput("");
   }
 
   function handelDeleteRoom() {
-    console.log("Room deleted");
+    socket.emit("delete_room", room);
+    console.log(`${room} has been deleted`);
+    setShowChat(false);
   }
 
   //MEDDELANDEN
 
-  function handleMessage(e, newMessage) {
-    e.preventDefault();
-    e.target.focus();
-    socket.emit("send_message", {
-      message: newMessage,
+  // YES DET FUNKAR NU!!
+  function handleMessage() {
+    const newMessage = {
+      message: message,
       room: roomInput,
       username: username,
-    });
-    setMessages(newMessage);
-    console.log(newMessage, "hej från newmsg");
+    };
+    socket.emit("message", newMessage);
+    setMessages([...messages, newMessage]);
+    setMessage("");
+    // console.log(message, "från handle messages");
   }
 
   useEffect(() => {
@@ -161,10 +151,7 @@ function App() {
               required
             />
           </div>
-          <button
-            className="header-btn"
-            onClick={() => handleUsername(username)}
-          >
+          <button className="btn" onClick={() => handleUsername(username)}>
             Create Username
           </button>
           <div className="form-control">
@@ -179,10 +166,10 @@ function App() {
               required
             />
           </div>
-          <button className="header-btn" onClick={() => createRoom(roomInput)}>
+          <button className="btn" onClick={() => createRoom(roomInput)}>
             Create room
           </button>
-          <button className="header-btn" onClick={() => joinRoom(roomInput)}>
+          <button className="btn" onClick={() => joinRoom(roomInput)}>
             Join room
           </button>
         </form>
@@ -198,56 +185,58 @@ function App() {
           <button className="header-btn" onClick={handelDeleteRoom}>
             Delete Room
           </button>
+
+          <button className="header-btn" onClick={() => leaveRoom()}>
+            Leave Room
+          </button>
         </div>
-        <button className="header-btn" onClick={() => leaveRoom()}>
-          Leave Room
-        </button>
       </header>
       <main className="chat-main">
         <div className="chat-sidebar">
           <h3>
-            <i className="fas fa-comments"></i> Room Name:
+            <i className="fas fa-comments"></i> Room:
           </h3>
           <h2 id="room-name">{roomInput}</h2>
           <h3>
-            <i className="fas fa-users"></i> Users:
+            <i className="fas fa-users"></i> Users: {message.username}
           </h3>
           <h2 id="users">{username}</h2>
         </div>
-
         <div className="chat-messages">
-          {Array.from(messages).map((newMessage) => {
-            return (
-              <div className="message" key={newMessage}>
-                <p className="meta">{username}</p>
-                {/* <span>{message.time}</span> */}
-                <p className="text">{newMessage}</p>
-              </div>
-            );
-          })}
+          <ul>
+            {messages.map((message) => {
+              return (
+                <li className="message">
+                  <p className="meta">{message.username}</p>
+                  <span>{message.date}</span>
+                  <p className="text">{message.message} </p>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       </main>
       <div className="chat-form-container">
         <form onSubmit={(e) => e.preventDefault()}>
           <input
-            name="message"
+            id="message"
             type="text"
             placeholder="Enter Message"
             required
             autoComplete="off"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
           />
           <button
+            type="submit"
             className="send-btn"
-            onClick={(e) => {
+            onClick={() => {
               {
-                handleMessage(e, newMessage);
-                setNewMessage("");
+                handleMessage();
               }
             }}
           >
-            <i className="fas fa-paper-plane"></i> Send
+            Send
           </button>
         </form>
       </div>
