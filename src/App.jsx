@@ -2,28 +2,26 @@ import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import "./App.css";
 
-let socket;
+let socket = io("http://localhost:4000");
 
 function App() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const [username, setUsername] = useState([]);
+  const [username, setUsername] = useState("");
   const [rooms, setRooms] = useState("");
   const [room, setRoom] = useState("");
   const [roomInput, setRoomInput] = useState("");
   const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
-    socket = io("http://localhost:4000");
-
     socket.on("connect", () => {
       console.log("Connected to server");
     });
 
     //messages
     socket.on("sent_message", (data) => {
-      setMessages(data);
-      console.log(data, "från sent message");
+      setMessage(data);
+      // console.log(data, "från sent message");
     });
 
     //users
@@ -38,21 +36,28 @@ function App() {
 
     //rooms
     socket.on("rooms", (data) => {
-      setRooms(data);
+      setRoom(data);
     });
 
     //gå med i rum
     socket.on("join_room", (data) => {
       if (data) {
-        console.log(data);
+        // console.log(data, "hej från joinrum i app");
         socket.emit("join_room", data);
         setRoom(data);
+        setMessage("");
       }
     });
 
     socket.on("room_created", (room) => {
       console.log(`A new room: ${room} was created`);
       setRoom(room);
+    });
+
+    socket.on("joined_room", (data) => {
+      const { room } = data;
+      setRoom(room);
+      // console.log(room, "hej från joined room");
     });
 
     socket.on("leave_room", (room) => {
@@ -87,7 +92,7 @@ function App() {
 
   function joinRoom(room) {
     if (room) {
-      socket.emit("join_room", room);
+      socket.emit("join_room", { room: roomInput, username: username });
       setRoom(room);
       setShowChat(true);
     }
@@ -106,27 +111,31 @@ function App() {
     socket.emit("delete_room", room);
     console.log(`${room} has been deleted`);
     setShowChat(false);
+    setRoomInput("");
+    setUsername("");
   }
 
   //MEDDELANDEN
 
-  // YES DET FUNKAR NU!!
-  function handleMessage() {
+  function handleMessage(data) {
     const newMessage = {
       message: message,
       room: roomInput,
       username: username,
     };
     socket.emit("message", newMessage);
-    setMessages([...messages, newMessage]);
-    setMessage("");
-    // console.log(message, "från handle messages");
+    if (message.length === 0) {
+      console.log("Can't send empty messages");
+    } else {
+      setMessages([...messages, newMessage]);
+      setMessage("");
+      console.log(message, "från skickat msg");
+    }
   }
 
   useEffect(() => {
     socket.on("all_rooms", (data) => {
       setRooms(data);
-      console.log("hej från all_rooms");
     });
   }, [rooms]);
 
@@ -198,7 +207,7 @@ function App() {
           </h3>
           <h2 id="room-name">{roomInput}</h2>
           <h3>
-            <i className="fas fa-users"></i> Users: {message.username}
+            <i className="fas fa-users"></i> Your name:
           </h3>
           <h2 id="users">{username}</h2>
         </div>
@@ -208,7 +217,7 @@ function App() {
               return (
                 <li className="message">
                   <p className="meta">{message.username}</p>
-                  <span>{message.date}</span>
+                  {/* <span>{message.date}</span> */}
                   <p className="text">{message.message} </p>
                 </li>
               );
