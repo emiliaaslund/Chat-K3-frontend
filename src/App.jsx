@@ -94,7 +94,7 @@ function App() {
   function joinRoom(room) {
     if (room) {
       socket.emit("join_room", room);
-      console.log(room, "console från function joinroom");
+      // console.log(room, "console från function joinroom");
       setRoom(room);
       setShowChat(true);
     }
