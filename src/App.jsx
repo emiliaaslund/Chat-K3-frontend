@@ -20,8 +20,8 @@ function App() {
 
     //messages
     socket.on("sent_message", (data) => {
-      setMessage(data);
-      // console.log(data, "från sent message");
+      setMessages((prevState) => [...prevState, data]);
+      console.log(data, "från sent message");
     });
 
     //users
@@ -35,29 +35,30 @@ function App() {
     });
 
     //rooms
-    socket.on("rooms", (data) => {
-      setRoom(data);
+    socket.on("rooms", (room) => {
+      setRoom(room);
+      console.log(room, "från rooms");
     });
 
     //gå med i rum
-    socket.on("join_room", (data) => {
-      if (data) {
-        // console.log(data, "hej från joinrum i app");
-        socket.emit("join_room", data);
-        setRoom(data);
-        setMessage("");
-      }
-    });
+    // socket.on("join_room", (data) => {
+    //   if (data) {
+    //     // console.log(data, "hej från joinrum i app");
+    //     socket.emit("join_room", data);
+    //     setRoom(data);
+    //     setMessage("");
+    //   }
+    // });s
 
     socket.on("room_created", (room) => {
+      console.log(room, "room created");
       console.log(`A new room: ${room} was created`);
       setRoom(room);
     });
 
-    socket.on("joined_room", (data) => {
-      const { room } = data;
+    socket.on("joined_room", (room) => {
       setRoom(room);
-      // console.log(room, "hej från joined room");
+      // console.log(room, "denna skriver ut rummet från joined room");
     });
 
     socket.on("leave_room", (room) => {
@@ -92,7 +93,8 @@ function App() {
 
   function joinRoom(room) {
     if (room) {
-      socket.emit("join_room", { room: roomInput, username: username });
+      socket.emit("join_room", room);
+      console.log(room, "console från function joinroom");
       setRoom(room);
       setShowChat(true);
     }
