@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import "./App.css";
 
-let socket = io("http://localhost:4000");
+const url = process.env.REACT_APP_BACKEND_URL;
+let socket = io.connect(url);
 
 function App() {
   const [message, setMessage] = useState("");
