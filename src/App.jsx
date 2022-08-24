@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import "./App.css";
 
-// const server = "https://realtimechat-backend.herokuapp.com/";
-let socket = io("https://realtimechat-backend.herokuapp.com/");
+const oldURL = "http://localhost:5000";
+// const newURL = "https://realtimechat-backend.herokuapp.com/";
+const socket = io(oldURL);
 
 function App() {
   const [message, setMessage] = useState("");
