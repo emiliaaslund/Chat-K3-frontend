@@ -53,14 +53,13 @@ function App() {
     // });s
 
     socket.on("room_created", (room) => {
-      console.log(room, "room created");
       console.log(`A new room: ${room} was created`);
       setRoom(room);
     });
 
     socket.on("joined_room", (room) => {
       setRoom(room);
-      // console.log(room, "denna skriver ut rummet från joined room");
+      console.log(room, "denna skriver ut rummet från joined room");
     });
 
     socket.on("leave_room", (room) => {
@@ -96,7 +95,7 @@ function App() {
   function joinRoom(room) {
     if (room) {
       socket.emit("join_room", room);
-      // console.log(room, "console från function joinroom");
+      console.log(room, "console från function joinroom");
       setRoom(room);
       setShowChat(true);
     }
