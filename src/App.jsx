@@ -59,7 +59,7 @@ function App() {
 
     socket.on("joined_room", (room) => {
       setRoom(room);
-      console.log(room, "denna skriver ut rummet från joined room");
+      console.log(room, "från joined room");
     });
 
     socket.on("leave_room", (room) => {
