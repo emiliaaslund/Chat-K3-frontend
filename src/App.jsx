@@ -119,7 +119,6 @@ function App() {
   }
 
   //MEDDELANDEN
-
   function handleMessage(data) {
     const newMessage = {
       message: message,
